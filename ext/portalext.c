@@ -89,8 +89,8 @@ portal_inspect(self)
   len = strlen(cname)+6+16;
   // len = strlen(format);
   str = rb_str_new(0, len); /* 6:tags 16:addr */
-  snprintf(RSTRING(str)->ptr, len+1, "#<%s:0X%lx>", cname, self);
-  RSTRING(str)->len = strlen(RSTRING(str)->ptr);
+  snprintf(RSTRING_PTR(str), len+1, "#<%s:0X%lx>", cname, self);
+  //RSTRING_LEN(str) = strlen(RSTRING_PTR(str));
   if (OBJ_TAINTED(self)) OBJ_TAINT(str);
 
   return str;
@@ -213,6 +213,7 @@ portal_poid_from_string(string,ebufp)
 static int
 portal_to_flist_i(VALUE key,VALUE val,ConvertData *cd)
 {
+  pin_buf_t *pin_bufp = NULL;
   pin_errbuf_t ebuf;
   pin_fld_num_t fld_num = 0;
   pin_flist_t *ary_flistp, *save_flistp;
@@ -299,6 +300,19 @@ portal_to_flist_i(VALUE key,VALUE val,ConvertData *cd)
       ebuf = *cd->ebufp;
       break;
 
+    case PIN_FLDT_BUF:
+fprintf(stderr,"XXX portal_to_flist_i\n");    
+      if ((val == Qundef) ||(val == Qnil)){
+fprintf(stderr,"XXX Qundef or Qnil\n");    
+        PIN_FLIST_FLD_SET(cd->flistp, fld_num, NULL, &ebuf);
+      } else {
+        pin_bufp = (pin_buf_t *)calloc(1, sizeof(pin_buf_t));
+        pin_bufp->data = RSTRING_PTR(val);
+        pin_bufp->size= RSTRING_LEN(val);
+        PIN_FLIST_FLD_SET(cd->flistp, fld_num, pin_bufp, &ebuf);
+        free(pin_bufp);
+      }
+      break;
     case PIN_FLDT_OBJ:
     case PIN_FLDT_BINSTR:
     case PIN_FLDT_ERR:
@@ -432,6 +446,7 @@ static VALUE
 portal_flist_to_hash(flistp)
   pin_flist_t *flistp;
 {
+  pin_buf_t *pin_bufp = NULL;
   pin_fld_num_t fld_num = 0;
   int buf_size = PCM_MAX_POID_TYPE + 48;
   char buf[PCM_MAX_POID_TYPE + 48];
@@ -505,7 +520,25 @@ portal_flist_to_hash(flistp)
          */
       rb_raise(ePortalError, "struct=>hash not implemented for key=%s", portal_to_char(key));
       break;
+case PIN_FLDT_BUF:
+  pin_bufp = field_val;
+if (pin_bufp->size == 0){
+fprintf(stderr,"BUF setting nil value\n");
+  val = Qundef;
+  VALUE myNil = Qnil;
+  rb_hash_aset(hash, key, myNil);
+  // rb_hash_aset(hash, key, rb_str_new2(""));
+} else {
+fprintf(stderr,"BUF setting non-nil value\n");
+  val = rb_str_new(pin_bufp->data, pin_bufp->size);
+}
+		// buft.flag       = 0;
+		// buft.size       = 0;
+		// buft.offset     = 0;
+		// buft.data       = 0;
+		// buft.xbuf_file  = NULL;
 
+break;
     case PIN_FLDT_BINSTR:
     case PIN_FLDT_ERR:
     case PIN_FLDT_OBJ:
@@ -554,9 +587,9 @@ portal_test_flist_to_hash(self,hash)
 
   PIN_ERR_CLEAR_ERR(&ebuf);
   flistp = portal_hash_to_flist(hash);
+  PIN_ERR_LOG_FLIST(PIN_ERR_LEVEL_DEBUG, "portal_test_flist_to_hash flist", flistp);
   result = portal_flist_to_hash(flistp);
-
-  PIN_ERR_LOG_FLIST(PIN_ERR_LEVEL_DEBUG, "portal_test_flist_to_hash return", flistp);
+  PIN_ERR_LOG_EBUF(PIN_ERR_LEVEL_DEBUG, "portal_test_flist_to_hash ebufp", &ebuf);
   //flist_str = NULL;
   //PIN_FLIST_TO_STR(flistp, &flist_str, &flist_len, &ebuf);
   PIN_FLIST_DESTROY_EX(&flistp,NULL);
@@ -630,11 +663,11 @@ portal_set_log_level(self,level)
 
   if (TYPE(level) == T_STRING || TYPE(level) == T_SYMBOL) {
     cp = portal_to_char(level);
-    if (!strcmpi(cp,"error")){
+    if (!strcmp(cp,"error")){
       lev = PIN_ERR_LEVEL_ERROR;
-    } else if (!strcmpi(cp,"warn")) {
+    } else if (!strcmp(cp,"warn")) {
       lev = PIN_ERR_LEVEL_WARNING;
-    } else if (!strcmpi(cp,"debug")) {
+    } else if (!strcmp(cp,"debug")) {
       lev = PIN_ERR_LEVEL_DEBUG;
     } else {
       rb_raise(ePortalError, "Error level %s not supported", cp);

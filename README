@@ -30,3 +30,11 @@ a 64-bit ruby and use this extension.
 You need include files to build. 
 Under non-win32, the setup.rb should be enough. I'm still trying to understand
 how one explains configuring VS. Perhaps I'll release win32 builds.
+
+== hacking
+
+ruby -I lib:ext:test -r portal -e 'Portal::Connection.new.connect(nil).xop(:PCM_OP_READ_OBJ,{:PIN_FLD_POID=>"0.0.0.1 /account 1"})'
+ruby -I lib:ext:test -r portal -e 'hash=Portal::Connection.new.connect(nil).xop(:PCM_OP_READ_OBJ,{:PIN_FLD_POID=>"0.0.0.1 /account 1"}); Portal.test_flist_to_hash(hash)'
+ruby -I lib:ext:test -r portal -e 'puts Portal.test_flist_to_hash(eval(File.read("hash.rb")))'
+
+cd ext; make && cd - && ruby -I lib:ext:test -r pp -r portal -e 'Portal.set_log_level("debug"); puts Portal.hash_to_flist_string(eval(File.read("hash.rb")))'

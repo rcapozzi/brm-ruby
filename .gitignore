@@ -1,0 +1,6 @@
+*.log
+*.pinlog
+ext/Makefile
+pin.conf
+ext/portalext.o
+ext/portalext.so

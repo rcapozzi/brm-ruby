@@ -1,6 +1,5 @@
 #ifndef _PORTALR_H
 #define _PORTALR_H
-
 #include "pcm.h"
 #include "pinlog.h"
 #include "pin_errs.h"
@@ -15,7 +14,7 @@
 #define TRACE(message) fprintf(stderr,"%s - %s:%ld %s\n", __FUNCTION__, __FILE__, __LINE__, message)
 #define TRACE_FUNC(name,label,value) fprintf(stderr,"%s - %s:%ld\n  %s %s %s\n", __FUNCTION__, __FILE__, __LINE__, name, label, value)
 #define TRACE_INSPECT(label,obj) \
-  if (rb_gv_get("$DEBUG")) fprintf(stderr,"%s - %s:%ld\n  %s: %s\n", __FUNCTION__, __FILE__, __LINE__, label, RSTRING(rb_funcall(obj,id_inspect,0))->ptr );
+  if (rb_gv_get("$DEBUG")) fprintf(stderr,"%s - %s:%ld\n  %s: %s\n", __FUNCTION__, __FILE__, __LINE__, label, RSTRING_PTR(rb_funcall(obj,id_inspect,0)));
 
 #else
 #define _D_
