@@ -566,7 +566,7 @@ SKIP_SET:
   }
 
   PIN_ERR_CLEAR_ERR(&ebuf);
-
+	PIN_FLIST_DESTROY_EX(&cdata.flistp, NULL);
   Check_Type(hash,T_HASH);
   return hash;
 }
@@ -1081,3 +1081,4 @@ Init_portalext(void)
   rb_define_method(cContext, "xop", portal_xop, -1);
 
 }
+
