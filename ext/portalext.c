@@ -456,20 +456,13 @@ portal_flist_to_hash(flistp)
   int rec_id = 0;
   int fld_type = 0;
   pin_cookie_t cookie = NULL;
-  pin_cookie_t ary_cookie = NULL;
   double dbl = 0.00;
-	VALUE subhash = Qundef;
+  VALUE subhash = Qundef;
   pin_errbuf_t ebuf;
-  ConvertData cdata;
   VALUE hash = Qundef, key = Qundef, val = Qundef;
 
-  cdata.flistp = NULL;
-  cdata.ebufp = &ebuf;
-
   PIN_ERR_CLEAR_ERR(&ebuf);
-  cdata.flistp = PIN_FLIST_CREATE(&ebuf);
-
-  memset(buf,0,sizeof(buf));
+  memset(buf, 0, sizeof(buf));
   bufp = buf;
   hash = rb_hash_new();
 
@@ -481,93 +474,70 @@ portal_flist_to_hash(flistp)
     case PIN_FLDT_STR:
       val = rb_str_new2(field_val);
       break;
-
     case PIN_FLDT_INT:
     case PIN_FLDT_UINT:
     case PIN_FLDT_ENUM:
     case PIN_FLDT_TSTAMP:
       val = INT2NUM(*(int*)field_val);
       break;
-
     case PIN_FLDT_NUM:
     case PIN_FLDT_DECIMAL:
       dbl = pbo_decimal_to_double((pin_decimal_t *)field_val, &ebuf);
       val = rb_float_new(dbl);
       break;
-
     case PIN_FLDT_POID:
-      buf_size = sizeof(buf); // b/c this changes it and memset(buf,0,sizeof(buf));
+      buf_size = sizeof(buf);
       PIN_POID_TO_STR((poid_t *)field_val, &bufp, &buf_size, &ebuf);
       val = rb_str_new2(bufp);
       break;
-
     case PIN_FLDT_ARRAY:
-			subhash = rb_hash_aref(hash, key);
-			if (TYPE(subhash) != T_HASH){
-				subhash = rb_hash_new();
-				rb_hash_aset(hash,key,subhash);
-			}
-
-			val = portal_flist_to_hash((pin_flist_t *) field_val);
-			rb_hash_aset(subhash,INT2FIX(rec_id),val);
-
+      subhash = rb_hash_aref(hash, key);
+      if (TYPE(subhash) != T_HASH) {
+        subhash = rb_hash_new();
+        rb_hash_aset(hash, key, subhash);
+      }
+      val = portal_flist_to_hash((pin_flist_t *) field_val);
+      rb_hash_aset(subhash, INT2FIX(rec_id), val);
       goto SKIP_SET;
       break;
-
     case PIN_FLDT_SUBSTRUCT:
-       /* hv_store(h,fld_name,fld_name_len,
-         flist_to_hash((pin_flist_t *) field_val), 0);
-         */
       rb_raise(ePortalError, "struct=>hash not implemented for key=%s", portal_to_char(key));
       break;
-case PIN_FLDT_BUF:
-  pin_bufp = field_val;
-if (pin_bufp->size == 0){
-fprintf(stderr,"BUF setting nil value\n");
-  val = Qundef;
-  VALUE myNil = Qnil;
-  rb_hash_aset(hash, key, myNil);
-  // rb_hash_aset(hash, key, rb_str_new2(""));
-} else {
-fprintf(stderr,"BUF setting non-nil value\n");
-  val = rb_str_new(pin_bufp->data, pin_bufp->size);
-}
-		// buft.flag       = 0;
-		// buft.size       = 0;
-		// buft.offset     = 0;
-		// buft.data       = 0;
-		// buft.xbuf_file  = NULL;
-
-break;
+    case PIN_FLDT_BUF:
+      pin_bufp = field_val;
+      if (pin_bufp->size == 0) {
+        val = Qnil;
+      } else {
+        val = rb_str_new(pin_bufp->data, pin_bufp->size);
+      }
+      break;
     case PIN_FLDT_BINSTR:
     case PIN_FLDT_ERR:
     case PIN_FLDT_OBJ:
     default:
-      fprintf(stderr,"  flist2hash name=%s num=%ld type=%ld\n", portal_to_char(key), fld_num, fld_type);
+#ifdef _DEBUG
+      if (rb_gv_get("$DEBUG"))
+        fprintf(stderr, "  flist2hash: unhandled field name=%s num=%ld type=%ld\n",
+                portal_to_char(key), fld_num, fld_type);
+#endif
       break;
     }
 
-    if (PIN_ERR_IS_ERR(&ebuf)){
+    if (PIN_ERR_IS_ERR(&ebuf)) {
       PIN_ERR_LOG_EBUF(PIN_ERR_LEVEL_ERROR, "Flist to hash conversion error", &ebuf);
-      rb_raise(ePortalError, "Error converting flist to hash key=%s type=%ld", portal_to_char(key),fld_type);
+      rb_raise(ePortalError, "Error converting flist to hash key=%s type=%ld",
+               portal_to_char(key), fld_type);
     }
 
-    if (val != Qundef){
+    if (val != Qundef) {
       rb_hash_aset(hash, key, val);
-#ifdef _DEBUG
-    if (rb_gv_get("$DEBUG"))
-      fprintf(stderr,"  flist2hash name=%s num=%ld type=%ld val=%s\n", portal_to_char(key), fld_num, fld_type, portal_to_char(val));
-#endif
       val = Qundef;
     }
-
 SKIP_SET:
-;
+    ;
   }
 
-  PIN_ERR_CLEAR_ERR(&ebuf);
-	PIN_FLIST_DESTROY_EX(&cdata.flistp, NULL);
-  Check_Type(hash,T_HASH);
+  Check_Type(hash, T_HASH);
   return hash;
 }
 
@@ -1081,4 +1051,5 @@ Init_portalext(void)
   rb_define_method(cContext, "xop", portal_xop, -1);
 
 }
+
 
