@@ -500,9 +500,11 @@ portal_flist_to_hash(flistp)
       rb_hash_aset(subhash, INT2FIX(rec_id), val);
       goto SKIP_SET;
       break;
-    case PIN_FLDT_SUBSTRUCT:
-      rb_raise(ePortalError, "struct=>hash not implemented for key=%s", portal_to_char(key));
-      break;
+	case PIN_FLDT_SUBSTRUCT:
+	    val = portal_flist_to_hash((pin_flist_t *) field_val);
+	    rb_hash_aset(hash, key, val);
+	    goto SKIP_SET; 
+	    break;
     case PIN_FLDT_BUF:
       pin_bufp = field_val;
       if (pin_bufp->size == 0) {
@@ -1051,5 +1053,6 @@ Init_portalext(void)
   rb_define_method(cContext, "xop", portal_xop, -1);
 
 }
+
 
 
