@@ -2,12 +2,14 @@ brm-ruby: Ruby bindings for Oracle BRM (formally Portal's Infranet).
     by Raymond Capozzi
 
 
-== DESCRIPTION:
+DESCRIPTION
+==
 
 brm-ruby enables Ruby programs to communicate with Oracle BRM (aka Portal's Infranet.
 
 
-== SYNOPSIS:
+SYNOPSIS
+==
 
 	require 'brm-ruby'
 	
@@ -18,20 +20,23 @@ brm-ruby enables Ruby programs to communicate with Oracle BRM (aka Portal's Infr
 This creates a connection to Portal using a pin.conf and deletes an account.
 
 
-== REQUIREMENTS:
+REQUIREMENTS
+==
 
 You need portal.[so|dll] to run.
 You need a 32-bit ruby. The Oracle BRM libraries for the CM are 32bit. You cannot run
 a 64-bit ruby and use this extension.
 
 
-== INSTALL
+INSTALL
+==
 
 You need include files to build. 
 Under non-win32, the setup.rb should be enough. I'm still trying to understand
 how one explains configuring VS. Perhaps I'll release win32 builds.
 
-== hacking
+hacking
+==
 
 ruby -I lib:ext:test -r portal -e 'Portal::Connection.new.connect(nil).xop(:PCM_OP_READ_OBJ,{:PIN_FLD_POID=>"0.0.0.1 /account 1"})'
 ruby -I lib:ext:test -r portal -e 'hash=Portal::Connection.new.connect(nil).xop(:PCM_OP_READ_OBJ,{:PIN_FLD_POID=>"0.0.0.1 /account 1"}); Portal.test_flist_to_hash(hash)'
